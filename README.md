@@ -74,6 +74,11 @@ in a new chat. This command is a **user installation step**; building and tests
 do not run it or change global Codex settings. Local plugin availability varies
 by client. See the official [plugin packaging and local marketplace guide](https://developers.openai.com/plugins/build/plugins).
 
+The native CLI installation command is `codex plugin add kastanje@kastanje-local`.
+With Codex 0.159.2 installed, `npm run test:codex` checks actual local installation,
+native MCP path resolution and the installed server handshake in a disposable
+Codex home, without changing the user's settings or sending inference.
+
 Invoke `kastanje_open` or its global/thread UI entrypoint. Only a host that
 supports MCP Apps and respects `ui.visibility: ["app"]` should expose the setup
 actions. The skill `kastanje-setup` guides this flow. No hooks or registered
@@ -157,10 +162,12 @@ rollback.
 
 ## Protocol and product limits
 
-This candidate needs a Codex release supporting sibling profiles (the hosted
+This plugin needs a Codex release supporting sibling profiles (the hosted
 setup contract targets 0.134+) and command-backed custom-provider auth. The
-actual installed CLI parser and native host behavior require caller acceptance;
-the worker tests the profile/file boundaries and MCP integration. Desktop
+Codex CLI 0.159.2 accepts the profile and plugin package in an isolated setup.
+The native CLI resolves the explicit relative MCP `cwd` against the installed
+plugin root. MCP argument placeholders are not expanded by its legacy parser;
+the manifest therefore uses `cwd: "."` and `./dist/server.mjs`. Desktop
 combined subscription/custom provider picker support is **not established**.
 
 The local template disables built-in apps, delegation, web search and
@@ -202,7 +209,7 @@ Codex against it remains a caller check.
 npm run package
 ```
 
-Produces `output/kastanje-codex-plugin-0.1.0-<platform>-<arch>.tgz` and
+Produces `output/kastanje-codex-plugin-0.1.1-<platform>-<arch>.tgz` and
 `output/package-proof.json`. The artifact contains built HTML/server/helper,
 local manifests, skill, assets/licenses, public sources and the installed
 native vault packages. It works after extraction without a runtime npm install;
@@ -213,8 +220,7 @@ are excluded. Bundled package/font/branding licenses are retained in
 `dist/THIRD-PARTY-NOTICES.md` and assets.
 
 CI has read-only repository permissions, pinned actions and no account/deploy
-credentials. It does not publish. This is a local candidate: independent
-review, browser acceptance, platform deployment, public repository hygiene and
-publication are separate caller responsibilities. A local stdio/OS-vault plugin
+credentials. It does not publish. See GitHub Releases for reviewed artifacts,
+exact revisions, verification and platform limits. A local stdio/OS-vault plugin
 is not a hosted web integration; universal-directory submission may need a
 separately reviewed distribution path. See [delivery evidence](docs/delivery.md).
