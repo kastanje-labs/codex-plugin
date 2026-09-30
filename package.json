@@ -1,6 +1,6 @@
 {
   "name": "kastanje-codex-plugin",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "type": "module",
   "engines": {"node": "22.21.1"},
@@ -8,6 +8,7 @@
     "build": "node scripts/build.mjs",
     "test": "node --test test/*.test.mjs",
     "test:ui": "node scripts/ui-check.mjs",
+    "test:codex": "node scripts/codex-check.mjs",
     "check": "node scripts/check.mjs",
     "ci": "npm run check && npm run build && npm test && npm run test:ui && npm run package:check",
     "preview": "node dist/server.mjs --preview 43188",

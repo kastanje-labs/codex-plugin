@@ -45,8 +45,9 @@ try {
   }
   const mcp = JSON.parse(await readFile(join(root, manifest.mcpServers), 'utf8')).mcpServers.kastanje;
   assert.equal(mcp.command, 'node');
-  const launch = mcp.args.map(arg => arg.replaceAll('${CLAUDE_PLUGIN_ROOT}', root));
-  assert.deepEqual(launch, [join(root, 'dist/server.mjs')]);
+  assert.equal(mcp.cwd, '.');
+  assert.deepEqual(mcp.args, ['./dist/server.mjs']);
+  const launch = mcp.args;
   const client = new Client({ name: 'kastanje-relocation-test', version: '1.0.0' });
   await client.connect(new StdioClientTransport({ command: process.execPath, args: [...launch, '--fixture', dir], cwd: root, stderr: 'pipe' }));
   try {
