@@ -145,6 +145,10 @@ hosted **API keys** (`/app/projects`). If recovery refuses edits, preserve the
 files and inspect them before any manual cleanup. The process lock coordinates
 plugin writers; it cannot prevent an unrelated process racing a file write.
 
+After a process crash, an abandoned `kastanje.lock` is refused rather than
+automatically reclaimed. Stop all Kastanje plugin runtimes, confirm no profile
+operation is running, then remove only that lock file and retry recovery.
+
 Before uninstalling, disconnect while the helper is still installed. After an
 upgrade or moving the installed directory, sync and reapply to refresh absolute
 helper paths. Retain the prior reviewed artifact for rollback; restore it and

@@ -91,8 +91,9 @@ export class ProfileStore {
       if (!Number.isSafeInteger(pid) || pid < 1) fail('The Kastanje lock is invalid.');
       try { process.kill(pid, 0); fail('Another Kastanje profile operation is running.'); }
       catch (running) { if (running.code !== 'ESRCH') throw running; }
-      if (await textAt(path) !== old) fail('The Kastanje lock changed. Retry.');
-      await unlink(path); file = await open(path, 'wx', 0o600);
+      // Reclaiming by read-then-unlink can delete another process's new lock.
+      // Fail closed; a stopped runtime's lock needs deliberate manual cleanup.
+      fail('A stopped operation left a Kastanje lock. Confirm no plugin runtime is writing, then remove only kastanje.lock before retrying.');
     }
     try { await file.writeFile(JSON.stringify({ pid: process.pid })); await file.sync(); return await fn(); }
     finally { await file.close(); await unlink(path); }

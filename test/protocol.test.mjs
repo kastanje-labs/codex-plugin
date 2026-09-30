@@ -42,3 +42,10 @@ test('HTTP response bounds, redirects, invalid JSON/type, timeout and cancellati
   await assert.rejects(request(origin, '/api/extension/device', { signal: controller.signal }), /timed out/);
   await assert.rejects(request(origin, '/arbitrary'), /Unsupported/);
 });
+test('Unicode-escaped credential cannot become plaintext in the normalized installed catalog', () => {
+  const bundle = fixtureBundle();
+  const escaped = Array.from(FIXTURE_KEY, ch => '\\u' + ch.charCodeAt(0).toString(16).padStart(4, '0')).join('');
+  bundle.files['kogle-models.json'] = '{"models":[{"slug":"demo-text","description":"' + escaped + '"}]}';
+  assert.ok(!JSON.stringify(bundle).includes(FIXTURE_KEY));
+  assert.throws(() => validateBundle(bundle, FIXTURE_KEY), /unsafe/);
+});

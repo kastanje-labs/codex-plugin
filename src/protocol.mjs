@@ -78,7 +78,8 @@ export function validateBundle(bundle, secret) {
       new Set(catalog.models.map(model => model.slug)).size !== catalog.models.length ||
       !catalog.models.every(model => bundle.modelIds.includes(model.slug))) fail('The platform model catalog does not match its model IDs.');
   const bytes = JSON.stringify(catalog, null, 2) + '\n';
-  if (Buffer.byteLength(bytes) > 2 * 1024 * 1024 || (secret && JSON.stringify(bundle).includes(secret))) fail('The platform setup bundle is unsafe.');
+  if (Buffer.byteLength(bytes) > 2 * 1024 * 1024 ||
+      (secret && (JSON.stringify(bundle).includes(secret) || bytes.includes(secret)))) fail('The platform setup bundle is unsafe.');
   // Preserve platform capabilities byte-equivalently as JSON values; no extension model conversion.
   return { catalog: bytes, defaultModel: bundle.defaultModel, count: bundle.modelIds.length, mode: bundle.mode };
 }

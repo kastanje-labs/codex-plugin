@@ -61,10 +61,12 @@ test('persisted interrupted transaction is recoverable and user edits are retain
   await writeFile(join(dir, MANIFEST), JSON.stringify(journal)); await writeFile(join(dir, PROFILE), 'user edit after interruption');
   await assert.rejects(store.recover(), /user edits/); assert.equal(await readFile(join(dir, PROFILE), 'utf8'), 'user edit after interruption');
 });
-test('live lock blocks writes and abandoned lock is reclaimed', async t => {
+test('live and abandoned locks block writes without unsafe reclamation', async t => {
   const dir = await home(t); const store = new ProfileStore(dir);
   await writeFile(join(dir, 'kastanje.lock'), JSON.stringify({ pid: process.pid })); await assert.rejects(apply(store), /Another/);
-  await writeFile(join(dir, 'kastanje.lock'), JSON.stringify({ pid: 99999999 })); await apply(store); assert.equal(await store.status(), 'applied');
+  await writeFile(join(dir, 'kastanje.lock'), JSON.stringify({ pid: 99999999 }));
+  await assert.rejects(apply(store), /stopped operation/);
+  assert.equal(await store.status(), 'not_applied');
 });
 test('auth helper returns only injected credential, rejects unknown argv and unsafe paths without reading stdin', async t => {
   const dir = await home(t); const vault = new MemoryVault(credential());
@@ -82,4 +84,12 @@ test('invalid UTF-8 cannot disguise a user edit as unchanged managed content', a
   const edited = Buffer.concat([bytes.subarray(0, at), Buffer.from([255]), bytes.subarray(at + 3)]);
   await writeFile(join(dir, CATALOG), edited);
   await assert.rejects(store.recover(), /invalid UTF-8/); assert.deepEqual(await readFile(join(dir, CATALOG)), edited);
+});
+test('concurrent stopped-lock recovery attempts cannot delete or replace each other’s lock', async t => {
+  const dir = await home(t); const lock = join(dir, 'kastanje.lock');
+  const original = JSON.stringify({ pid: 99999999 }); await writeFile(lock, original);
+  let entered = 0;
+  const results = await Promise.allSettled([new ProfileStore(dir), new ProfileStore(dir)].map(store => store.locked(async () => { entered++; })));
+  assert.equal(entered, 0); assert.ok(results.every(result => result.status === 'rejected'));
+  assert.equal(await readFile(lock, 'utf8'), original);
 });

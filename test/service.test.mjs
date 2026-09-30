@@ -102,3 +102,14 @@ test('a credential replaced by another local runtime cannot apply a previous pro
   await assert.rejects(service.apply(), /Sync a connected/); assert.deepEqual(await readdir(dir), []);
   assert.equal((await service.status()).catalog, null);
 });
+test('failed network refresh or invalid catalog revokes eligibility to apply the previous catalog', async t => {
+  const { service, vault, dir } = await setup(t); vault.value = credential();
+  const initial = service.request;
+  for (const refresh of [async () => { throw Error('Synthetic network failure'); }, async () => ({ client: 'vscode' })]) {
+    service.request = initial; await service.sync(); assert.equal((await service.status()).catalog.count, 1);
+    service.request = refresh; await assert.rejects(service.sync());
+    assert.equal((await service.status()).catalog, null);
+    await assert.rejects(service.apply(), /Sync a connected/);
+    assert.deepEqual(await readdir(dir), []);
+  }
+});

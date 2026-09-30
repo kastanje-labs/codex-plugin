@@ -88,6 +88,8 @@ export class ConnectionService {
   sync() {
     const epoch = this.epoch;
     return this.queue(async () => {
+      // A failed refresh must not leave an older catalog eligible for Apply.
+      this.bundle = null; this.bundleCredential = null;
       const credential = await this.vault.get(); if (!credential) fail('Connect to Kastanje first.');
       const result = await this.request(this.origin, '/v1/pixelroute/setup?client=codex', { key: credential.key });
       if (epoch !== this.epoch) return this.status();
