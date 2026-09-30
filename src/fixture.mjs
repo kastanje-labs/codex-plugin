@@ -10,7 +10,7 @@ export const fixtureBundle = () => ({
     default_reasoning_level: 'medium', supported_reasoning_levels: [{ effort: 'medium', description: 'Fixture' }],
     shell_type: 'shell_command', visibility: 'list', supported_in_api: true, priority: 0,
     availability_nux: null, upgrade: null, base_instructions: 'Use the tools provided by the client.',
-    supports_reasoning_summaries: true, supports_verbosity: false, default_verbosity: null,
+    supports_reasoning_summaries: true, support_verbosity: false, default_verbosity: null,
     apply_patch_tool_type: 'freeform', web_search_tool_type: 'text',
     truncation_policy: { mode: 'bytes', limit: 16000 }, supports_parallel_tool_calls: true,
     context_window: 128000, auto_compact_token_limit: 100000, effective_context_window_percent: 90,
