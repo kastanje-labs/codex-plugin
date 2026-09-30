@@ -49,3 +49,11 @@ test('Unicode-escaped credential cannot become plaintext in the normalized insta
   assert.ok(!JSON.stringify(bundle).includes(FIXTURE_KEY));
   assert.throws(() => validateBundle(bundle, FIXTURE_KEY), /unsafe/);
 });
+test('decoded secret strings and property names are refused even with JSON-sensitive credentials', () => {
+  for (const key of ['synthetic-secret"0000', 'synthetic-secret\\0000']) {
+    for (const model of [{ slug: 'demo-text', base_instructions: key }, { slug: 'demo-text', nested: [{ [key]: 'value' }] }]) {
+      const bundle = fixtureBundle(); bundle.files['kogle-models.json'] = JSON.stringify({ models: [model] });
+      assert.throws(() => validateBundle(bundle, key), /unsafe/);
+    }
+  }
+});

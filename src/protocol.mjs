@@ -59,6 +59,22 @@ export async function request(origin, path, { body, key, signal, timeout = 10000
   }
 }
 
+function containsSecret(value, secret) {
+  if (!secret) return false;
+  const pending = [value], seen = new WeakSet();
+  while (pending.length) {
+    const item = pending.pop();
+    if (typeof item === 'string' && item.includes(secret)) return true;
+    if (!item || typeof item !== 'object' || seen.has(item)) continue;
+    seen.add(item);
+    for (const [key, nested] of Object.entries(item)) {
+      if (key.includes(secret)) return true;
+      pending.push(nested);
+    }
+  }
+  return false;
+}
+
 export function validateBundle(bundle, secret) {
   if (!record(bundle) || bundle.client !== 'codex' || !['demo', 'live', 'mixed'].includes(bundle.mode) ||
       !Array.isArray(bundle.modelIds) || bundle.modelIds.length < 1 || bundle.modelIds.length > 256 ||
@@ -79,7 +95,7 @@ export function validateBundle(bundle, secret) {
       !catalog.models.every(model => bundle.modelIds.includes(model.slug))) fail('The platform model catalog does not match its model IDs.');
   const bytes = JSON.stringify(catalog, null, 2) + '\n';
   if (Buffer.byteLength(bytes) > 2 * 1024 * 1024 ||
-      (secret && (JSON.stringify(bundle).includes(secret) || bytes.includes(secret)))) fail('The platform setup bundle is unsafe.');
+      containsSecret(bundle, secret) || containsSecret(catalog, secret)) fail('The platform setup bundle is unsafe.');
   // Preserve platform capabilities byte-equivalently as JSON values; no extension model conversion.
   return { catalog: bytes, defaultModel: bundle.defaultModel, count: bundle.modelIds.length, mode: bundle.mode };
 }
