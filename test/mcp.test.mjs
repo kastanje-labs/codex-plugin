@@ -1,0 +1,40 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { readFile, readdir } from 'node:fs/promises';
+import { resolve } from 'node:path';
+import { spawnSync } from 'node:child_process';
+import { Client } from '@modelcontextprotocol/sdk/client/index.js';
+import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
+import { URI, ACTIONS } from '../src/mcp.mjs';
+import { FIXTURE_KEY } from '../src/fixture.mjs';
+import { home } from './support.mjs';
+test('built server initializes over stdio, exposes app-only setup, reads self-contained HTML and applies only on request', async t => {
+  const dir = await home(t); let stderr = '';
+  const transport = new StdioClientTransport({ command: process.execPath, args: [resolve('dist/server.mjs'), '--fixture', dir], stderr: 'pipe' });
+  transport.stderr.on('data', data => { stderr += data; });
+  const client = new Client({ name: 'kastanje-contract-test', version: '1.0.0' });
+  await client.connect(transport); t.after(() => client.close());
+  const tools = (await client.listTools()).tools;
+  assert.deepEqual(tools.map(tool => tool.name).sort(), ['kastanje_open', ...ACTIONS.map(action => 'kastanje_' + action)].sort());
+  for (const tool of tools.filter(tool => tool.name !== 'kastanje_open')) assert.deepEqual(tool._meta.ui.visibility, ['app']);
+  assert.deepEqual(tools.find(tool => tool.name === 'kastanje_open')._meta['openai/ui'].entrypoints, [{ type: 'global' }, { type: 'thread' }]);
+  const resources = await client.listResources(); assert.equal(resources.resources[0].uri, URI);
+  const resource = (await client.readResource({ uri: URI })).contents[0];
+  assert.ok(resource.mimeType.includes('text/html')); assert.ok(resource.text.includes('data:font/woff2;base64,'));
+  assert.ok(!resource.text.includes('/*APP_JS*/')); assert.ok(!resource.text.includes(FIXTURE_KEY));
+  assert.deepEqual(resource._meta.ui.csp.connectDomains, []); assert.deepEqual(resource._meta.ui.csp.resourceDomains, []);
+  const call = name => client.callTool({ name: 'kastanje_' + name, arguments: {} });
+  const opened = await call('open'); assert.equal(opened._meta['kastanje/status'].mock, true); assert.deepEqual(await readdir(dir), []);
+  const pending = await call('begin'); assert.equal(pending._meta['kastanje/status'].userCode, 'ABCD-1234-EF56'); assert.ok(!JSON.stringify(pending.structuredContent).includes('ABCD'));
+  await call('cancel'); assert.equal((await call('status'))._meta['kastanje/status'].phase, 'disconnected');
+  assert.equal((await call('apply')).isError, true); assert.deepEqual(await readdir(dir), []);
+  assert.equal((await client.callTool({ name: 'kastanje_inference', arguments: {} })).isError, true);
+  assert.ok(!stderr.includes(FIXTURE_KEY));
+});
+test('built auth helper invalid args fail closed with sanitized stderr and empty stdout', () => {
+  const result = spawnSync(process.execPath, ['dist/auth.mjs', 'wrong-operation'], { encoding: 'utf8', input: FIXTURE_KEY });
+  assert.equal(result.status, 1); assert.equal(result.stdout, ''); assert.match(result.stderr, /credential unavailable/); assert.ok(!result.stderr.includes(FIXTURE_KEY));
+});
+test('preview host fixture uses real AppBridge and stays labelled', async () => {
+  const html = await readFile('dist/preview.html', 'utf8'); assert.match(html, /Synthetic preview/); assert.match(html, /no live login/);
+});

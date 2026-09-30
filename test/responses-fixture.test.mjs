@@ -1,0 +1,38 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { spawn, spawnSync } from 'node:child_process';
+import { createServer } from 'node:net';
+import { once } from 'node:events';
+import { readFile, readdir, access } from 'node:fs/promises';
+import { join } from 'node:path';
+import { FIXTURE_KEY } from '../src/fixture.mjs';
+test('isolated Responses fixture validates bearer/model, serves JSON/SSE and cleans its profile without a vault', async t => {
+  const reserve = createServer(); reserve.listen(0, '127.0.0.1'); await once(reserve, 'listening');
+  const port = reserve.address().port; await new Promise(resolve => reserve.close(resolve));
+  const child = spawn(process.execPath, ['scripts/responses-fixture.mjs', '--port', String(port)], { stdio: ['ignore', 'pipe', 'pipe'] });
+  let output = '', errors = '';
+  child.stderr.on('data', data => { errors += data; });
+  t.after(async () => { if (child.exitCode === null) { child.kill('SIGTERM'); await once(child, 'exit'); } });
+  await new Promise((resolve, reject) => {
+    const timeout = setTimeout(() => reject(Error('Fixture startup timed out')), 5000);
+    child.stdout.on('data', data => { output += data; if (output.includes('No request can leave this fixture.')) { clearTimeout(timeout); resolve(); } });
+    child.once('exit', code => { clearTimeout(timeout); reject(Error('Fixture exited ' + code + ': ' + errors)); });
+  });
+  const dir = output.match(/^Synthetic fixture CODEX_HOME: (.+)$/m)[1];
+  assert.ok(!output.includes(FIXTURE_KEY)); assert.deepEqual((await readdir(dir)).sort(), ['kastanje.config.toml', 'kastanje.kogle-models.json', 'kastanje.managed.json', 'synthetic-auth.mjs']);
+  assert.ok(!(await readFile(join(dir, 'kastanje.config.toml'), 'utf8')).includes(FIXTURE_KEY));
+  const helper = spawnSync(process.execPath, [join(dir, 'synthetic-auth.mjs')], { encoding: 'utf8', input: 'ignored input' });
+  assert.equal(helper.stdout, FIXTURE_KEY + '\n'); assert.equal(helper.stderr, '');
+  const origin = `http://127.0.0.1:${port}`;
+  assert.equal((await fetch(origin + '/v1/models')).status, 401);
+  const headers = { Authorization: 'Bearer ' + FIXTURE_KEY, 'Content-Type': 'application/json' };
+  assert.equal((await fetch(origin + '/v1/models', { headers })).status, 200);
+  assert.equal((await fetch(origin + '/v1/responses', { method: 'POST', headers, body: JSON.stringify({ model: 'wrong' }) })).status, 400);
+  const result = await fetch(origin + '/v1/responses', { method: 'POST', headers, body: JSON.stringify({ model: 'demo-text', input: 'synthetic only' }) });
+  const body = await result.json(); assert.equal(body.status, 'completed'); assert.equal(body.output[0].content[0].text, 'Synthetic Responses fixture completed.');
+  const streamed = await fetch(origin + '/v1/responses', { method: 'POST', headers, body: JSON.stringify({ model: 'demo-text', input: 'synthetic only', stream: true }) });
+  assert.match(streamed.headers.get('content-type'), /text\/event-stream/);
+  const sse = await streamed.text(); assert.match(sse, /event: response.output_text.delta/); assert.match(sse, /event: response.completed/); assert.ok(!sse.includes(FIXTURE_KEY));
+  assert.deepEqual(await (await fetch(origin + '/fixture/status')).json(), { synthetic: true, requestCount: 2 });
+  child.kill('SIGTERM'); await once(child, 'exit'); assert.equal(errors, ''); await assert.rejects(access(dir));
+});

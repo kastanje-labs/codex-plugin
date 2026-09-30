@@ -1,0 +1,15 @@
+import { readdir, readFile } from 'node:fs/promises';
+import { execFileSync } from 'node:child_process';
+import assert from 'node:assert/strict';
+for (const dir of ['src', 'scripts', 'test']) for (const file of await readdir(dir)) if (file.endsWith('.mjs')) execFileSync(process.execPath, ['--check', `${dir}/${file}`], { stdio: 'inherit' });
+const pkg = JSON.parse(await readFile('package.json', 'utf8'));
+const lock = JSON.parse(await readFile('package-lock.json', 'utf8'));
+assert.equal(process.version, 'v' + pkg.engines.node, 'Use the pinned Node version');
+assert.deepEqual(lock.packages[''].dependencies, pkg.dependencies);
+assert.deepEqual(lock.packages[''].devDependencies, pkg.devDependencies);
+for (const version of Object.values({ ...pkg.dependencies, ...pkg.devDependencies })) assert.match(version, /^\d+\.\d+\.\d+$/);
+const skill = await readFile('skills/kastanje-setup/SKILL.md', 'utf8');
+assert.match(skill, /^---\nname: kastanje-setup\ndescription: .+\n---\n/);
+assert.ok(!skill.includes('TODO'));
+for (const file of ['.codex-plugin/plugin.json', '.mcp.json', '.agents/plugins/marketplace.json']) JSON.parse(await readFile(file, 'utf8'));
+process.stdout.write('Syntax, pinned dependencies, lockfile and plugin/skill manifests checked.\n');

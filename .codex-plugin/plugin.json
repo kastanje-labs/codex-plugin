@@ -1,0 +1,16 @@
+{
+  "name": "kastanje",
+  "version": "0.1.0",
+  "description": "Connect the hosted Kastanje platform to native Codex.",
+  "author": {"name": "Kastanje Labs"},
+  "license": "MIT",
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json",
+  "interface": {
+    "displayName": "Kastanje",
+    "shortDescription": "Your Kastanje project, connected to Codex.",
+    "composerIcon": "./assets/icon.png",
+    "logo": "./assets/icon.png",
+    "brandColor": "#f47745"
+  }
+}

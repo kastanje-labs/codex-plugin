@@ -1,0 +1,26 @@
+{
+  "name": "kastanje-codex-plugin",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {"node": "22.21.1"},
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "test": "node --test test/*.test.mjs",
+    "test:ui": "node scripts/ui-check.mjs",
+    "check": "node scripts/check.mjs",
+    "ci": "npm run check && npm run build && npm test && npm run test:ui && npm run package:check",
+    "preview": "node dist/server.mjs --preview 43188",
+    "fixture": "node scripts/responses-fixture.mjs",
+    "package": "node scripts/package.mjs",
+    "package:check": "node scripts/package.mjs --check"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/ext-apps": "1.7.5",
+    "@modelcontextprotocol/sdk": "1.31.0",
+    "@openai/mcp-extensions": "0.1.0",
+    "@napi-rs/keyring": "2.1.0",
+    "zod": "3.25.76"
+  },
+  "devDependencies": {"esbuild": "0.25.12", "playwright": "1.58.2"}
+}
