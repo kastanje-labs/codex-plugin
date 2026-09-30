@@ -1,17 +1,18 @@
 // Actual native plugin parsing/installation in a disposable Codex home; no inference.
 import { execFileSync } from 'node:child_process';
-import { mkdtemp, realpath, rm } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, realpath, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import assert from 'node:assert/strict';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
-const version = JSON.parse(await (await import('node:fs/promises')).readFile('package.json', 'utf8')).version;
+const version = JSON.parse(await readFile('package.json', 'utf8')).version;
 const dir = await mkdtemp(join(await realpath(tmpdir()), 'kastanje-native-plugin-'));
 const home = join(dir, 'codex-home');
 const env = { ...process.env, CODEX_HOME: home };
 const run = args => execFileSync('codex', args, { env, encoding: 'utf8', timeout: 15000, stdio: ['ignore', 'pipe', 'pipe'] });
 try {
+  await mkdir(home, { mode: 0o700 });
   execFileSync('tar', ['-xzf', resolve(`output/kastanje-codex-plugin-${version}-${process.platform}-${process.arch}.tgz`), '-C', dir]);
   const root = join(dir, 'package');
   run(['plugin', 'marketplace', 'add', root, '--json']);
