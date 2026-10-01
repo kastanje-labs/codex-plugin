@@ -11,7 +11,13 @@ function hostContext(theme) {
   } } };
 }
 const bridge = new AppBridge(null, { name: 'kastanje-synthetic-host', version: '0.1.0' }, { openLinks: {}, serverTools: {} }, { hostContext: hostContext(themeControl.value) });
-themeControl.addEventListener('change', () => bridge.setHostContext(hostContext(themeControl.value)));
+themeControl.addEventListener('change', () => {
+  // Host deltas cannot unset an explicit theme: repeat the initial handshake.
+  if (themeControl.value === 'system') {
+    location.hash = 'system';
+    location.reload();
+  } else bridge.setHostContext(hostContext(themeControl.value));
+});
 bridge.oncalltool = async ({ name }) => {
   window.previewCalls.push(name);
   const response = await fetch('/api/tool', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name }) });

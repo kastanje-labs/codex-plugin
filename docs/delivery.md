@@ -45,7 +45,10 @@ The real AppBridge UI gate now covers initial light/dark context with opposing
 OS preferences, OS fallback/change, live switching without reload or extra setup
 calls, retained pending/connected/catalog/error state, readable text contrast
 (minimum 4.5:1 for sampled enabled text) and 375 px layout. The labelled preview
-has a host-theme control; it is not a separate product theme setting.
+has a host-theme control; it is not a separate product theme setting. Independent
+review found that selecting no host theme after an explicit one needed a fresh
+handshake; the preview now reopens with `#system`, with a regression covering the
+transition and subsequent OS changes. Explicit light/dark changes remain live.
 
 Release gates: `npm ci && npm run ci` on Node 22.21.1, plus
 `npm run test:codex` with Codex 0.159.2; independent review of the exact source

@@ -66,7 +66,9 @@ node dist/server.mjs --preview 43188 network
 
 Run one preview at a time. The synthetic host's **Host theme** selector exercises
 initial light/dark context and live notifications. Open `/#light`, `/#dark` or
-`/#system` to select the initial test context. Automated UI tests cover these
+`/#system` to select the initial test context. Selecting **No host theme**
+reopens the preview to repeat the handshake, since a partial notification cannot
+unset an explicit host theme. Automated UI tests cover these
 themes, readable text contrast, approval, cancellation, denial and network
 failure, keyboard navigation and a narrow viewport. Native desktop visual
 acceptance remains a separate check; this preview

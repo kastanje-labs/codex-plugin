@@ -79,6 +79,17 @@ try {
           }
           assert.equal(await frame.evaluate(() => window.themeStateMarker), 'same-document', 'Theme changes must not reload the panel');
           assert.equal(await page.evaluate(() => window.previewCalls.length), calls, 'Theme changes must not call setup tools');
+          if (initial === 'dark') {
+            await page.emulateMedia({ colorScheme: 'light' });
+            await checkTheme(panel, 'dark');
+            await Promise.all([page.waitForEvent('load'), page.getByLabel('Host theme', { exact: true }).selectOption('system')]);
+            assert.equal(page.url(), `${themeHost.origin}/#system`);
+            await panel.getByRole('note').waitFor();
+            await checkTheme(panel, 'light');
+            await page.emulateMedia({ colorScheme: 'dark' });
+            await panel.locator('html[data-theme="dark"]').waitFor();
+            await checkTheme(panel, 'dark');
+          }
         }
         process.stdout.write(`UI theme ${initial}: initial context, live changes, contrast and layout passed.\n`);
       } finally { await page.close(); }
