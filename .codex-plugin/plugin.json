@@ -1,6 +1,6 @@
 {
   "name": "kastanje",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Connect the hosted Kastanje platform to native Codex.",
   "author": {"name": "Kastanje Labs"},
   "license": "MIT",
