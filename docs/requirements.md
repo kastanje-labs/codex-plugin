@@ -59,6 +59,12 @@ assets from the public kastanje-labs/vscode-extension repository. Copy only
 required MIT public fonts/assets with licensing. Responsive/keyboard/loading/
 error/disconnected states. No iframe weakening of platform security; host
 openLink links out to existing platform. Local loopback preview for reviewer.
+
+Theme delta accepted on 2026-10-01: apply initial MCP host context after connect
+and later theme notifications. Use coherent Kastanje light/dark surface/text
+pairs with namespaced tokens; OS fallback only without a host theme. Test both
+initial themes, live switching without setup calls/reload, error/status contrast
+and narrow layout through the real AppBridge.
 Portable plugin root plugin.json or .codex-plugin/plugin.json + .mcp.json
 relative paths supported; package remains self-contained after build. Document
 install via Codex local plugin pathway, no global installation by worker.

@@ -6,7 +6,7 @@ import { safeMessage } from './protocol.mjs';
 export const URI = 'ui://kastanje/setup';
 export const ACTIONS = ['status', 'begin', 'poll', 'cancel', 'sync', 'apply', 'recover', 'disconnect'];
 export function makeServer(service, htmlUrl = new URL('./index.html', import.meta.url)) {
-  const server = new McpServer({ name: 'kastanje', version: '0.1.1' });
+  const server = new McpServer({ name: 'kastanje', version: '0.1.2' });
   new OpenAIExtensions(server);
   registerAppResource(server, 'kastanje-setup', URI, {}, async () => ({ contents: [{
     uri: URI, mimeType: RESOURCE_MIME_TYPE, text: await readFile(htmlUrl, 'utf8'),

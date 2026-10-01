@@ -4,6 +4,12 @@ A small local plugin connects a hosted Kastanje project to native Codex. The
 panel handles connection status, catalog sync and a separate CLI profile.
 Kastanje owns login, projects, models, budgets, connections and usage insights.
 
+The product is **Kastanje for Codex**, in `kastanje-labs/codex-plugin`, with the
+stable plugin ID `kastanje`. The panel follows the host's initial light/dark
+theme and live theme changes, using Kastanje's paired surface/text colors.
+When a host provides no theme, it follows the operating system. Hosted platform
+settings remain on the platform; the plugin adds no separate theme preference.
+
 The panel opens the existing platform: [Setup](https://kastanje-app-demo.gustavonline.workers.dev/app/connect?client=codex),
 [API keys and revocation](https://kastanje-app-demo.gustavonline.workers.dev/app/projects),
 [Activity](https://kastanje-app-demo.gustavonline.workers.dev/app/activity), and
@@ -18,7 +24,12 @@ Use Node **22.21.1** (also in `.nvmrc`):
 npm ci
 npx playwright install chromium
 npm run ci
+npm run test:codex
 ```
+
+These commands run from the source checkout. In an extracted release archive,
+use `cd package/source` before rebuilding; the `package/` root is the ready-to-run
+plugin and has only preview/fixture scripts. `test:codex` requires Codex 0.159.2.
 
 On a minimal Linux CI machine use `npx playwright install --with-deps chromium`.
 `ci` checks syntax/manifests, builds, runs protocol/profile/MCP tests and real
@@ -53,9 +64,14 @@ node dist/server.mjs --preview 43188 replay
 node dist/server.mjs --preview 43188 network
 ```
 
-Run one preview at a time. Automated UI tests cover approval, cancellation,
-denial and network failure, keyboard navigation and a narrow viewport. Visual
-acceptance and the actual Codex host check remain reviewer work; this preview
+Run one preview at a time. The synthetic host's **Host theme** selector exercises
+initial light/dark context and live notifications. Open `/#light`, `/#dark` or
+`/#system` to select the initial test context. Selecting **No host theme**
+reopens the preview to repeat the handshake, since a partial notification cannot
+unset an explicit host theme. Automated UI tests cover these
+themes, readable text contrast, approval, cancellation, denial and network
+failure, keyboard navigation and a narrow viewport. Native desktop visual
+acceptance remains a separate check; this preview
 does not prove a desktop provider picker or a completed live login.
 
 ## Local plugin installation
@@ -64,7 +80,8 @@ Build first, or extract the reviewed platform-specific release archive into a
 stable directory. Keep the whole plugin directory, including its `dist/` and
 native vault dependency. Node must be available to the local Codex runtime.
 The compatibility manifest lives in `.codex-plugin/plugin.json`; `.mcp.json`
-uses the host-expanded plugin root, with no machine-specific install path.
+uses an explicit relative `cwd: "."` resolved against the installed plugin root,
+with `./dist/server.mjs` and no machine-specific install path.
 
 The repository includes `.agents/plugins/marketplace.json` with a relative
 local source. In supported local clients, add that directory as a marketplace
@@ -137,8 +154,10 @@ The plugin reads `/v1/pixelroute/setup?client=codex`, selects only
 `kogle-models.json`, and validates catalog/model IDs/default/size. It preserves
 platform capabilities as JSON values. Downloaded TOML, README instructions and
 other paths are never installed or executed; profile configuration comes from
-a local fixed template. `config.toml`, `auth.json` and all other files remain
-byte-for-byte unchanged. Symlink directories or managed destinations, unmanaged
+a local fixed template. Profile actions leave `config.toml`, `auth.json` and
+all other files byte-for-byte unchanged. Codex's own marketplace/plugin
+installation commands can update its base configuration to enable the plugin.
+Symlink directories or managed destinations, unmanaged
 files and user edits are refused. Sync/reapply is idempotent.
 
 Changes are journaled before replacement. A failed/interrupted update restores
@@ -209,7 +228,7 @@ Codex against it remains a caller check.
 npm run package
 ```
 
-Produces `output/kastanje-codex-plugin-0.1.1-<platform>-<arch>.tgz` and
+Produces `output/kastanje-codex-plugin-0.1.2-<platform>-<arch>.tgz` and
 `output/package-proof.json`. The artifact contains built HTML/server/helper,
 local manifests, skill, assets/licenses, public sources and the installed
 native vault packages. It works after extraction without a runtime npm install;
@@ -222,5 +241,26 @@ are excluded. Bundled package/font/branding licenses are retained in
 CI has read-only repository permissions, pinned actions and no account/deploy
 credentials. It does not publish. See GitHub Releases for reviewed artifacts,
 exact revisions, verification and platform limits. A local stdio/OS-vault plugin
-is not a hosted web integration; universal-directory submission may need a
-separately reviewed distribution path. See [delivery evidence](docs/delivery.md).
+is not a hosted web integration. See the distribution boundaries below and
+[delivery evidence](docs/delivery.md).
+
+## Distribution
+
+Local/repository marketplaces are the supported test route for this package.
+Installing a raw source repository does not build it or install its dependencies;
+use the reviewed archive matching your OS/architecture, or build the source first.
+
+OpenAI's [public directory submission](https://developers.openai.com/plugins/deploy/submission)
+uses the [submission portal](https://platform.openai.com/plugins), verified
+developer identity, suitable organisation permissions and review. The documented
+MCP route requires a public HTTPS/Streamable HTTP endpoint. Core local execution
+needs product-specific support or contact with OpenAI. The current stdio server
+accesses the local OS vault and writes an explicit local profile; moving that
+server to a remote endpoint would not preserve those boundaries. No public
+directory submission is claimed for this release.
+
+[tldraw's MCP app](https://github.com/tldraw/tldraw/tree/main/apps/mcp-app)
+is a useful example of a hosted MCP panel on Cloudflare Workers and Durable
+Objects. Its hosted UI pattern fits Kastanje's platform reuse, but it does not
+establish distribution support for a local credential/profile helper. Retain
+the thin local connector while researching a public directory path separately.

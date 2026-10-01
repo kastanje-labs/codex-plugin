@@ -1,8 +1,18 @@
 import { App, applyDocumentTheme, applyHostStyleVariables } from '@modelcontextprotocol/ext-apps';
 import { OpenAIExtensions } from '@openai/mcp-extensions/app';
 const root = document.querySelector('#root');
-const app = new App({ name: 'kastanje-setup', version: '0.1.0' });
+const app = new App({ name: 'kastanje-setup', version: '0.1.2' });
 new OpenAIExtensions(app);
+const systemTheme = matchMedia('(prefers-color-scheme: dark)');
+let hostTheme;
+function applyTheme(context) {
+  // A partial host update must retain its explicit theme over the OS preference.
+  if (context?.theme) hostTheme = context.theme;
+  applyDocumentTheme(hostTheme || (systemTheme.matches ? 'dark' : 'light'));
+  if (context?.styles?.variables) applyHostStyleVariables(context.styles.variables);
+}
+systemTheme.addEventListener('change', () => { if (!hostTheme) applyTheme(); });
+applyTheme();
 let state, busy = '', error = '', notice = '', timer, generation = 0;
 const escape = value => String(value).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const button = (action, label, style = '', disabled = false) => `<button data-action="${action}" class="${style}" ${disabled || (busy && action !== 'cancel') ? 'disabled' : ''}>${escape(busy === action ? 'Working…' : label)}</button>`;
@@ -59,12 +69,9 @@ root.addEventListener('click', event => {
   if (target?.dataset.link) void open(target.dataset.link);
 });
 app.ontoolresult = result => { try { receive(result); } catch (cause) { error = cause.message; render(); } };
-app.onhostcontextchanged = context => {
-  if (context.theme) applyDocumentTheme(context.theme);
-  if (context.styles?.variables) applyHostStyleVariables(context.styles.variables);
-};
+app.onhostcontextchanged = applyTheme;
 document.addEventListener('visibilitychange', schedule);
 window.addEventListener('pagehide', () => clearTimeout(timer));
 render();
-try { await app.connect(); if (!state) await perform('status'); }
+try { await app.connect(); applyTheme(app.getHostContext()); if (!state) await perform('status'); }
 catch { error = 'Open this setup panel in a supported MCP Apps host.'; busy = ''; render(); }
